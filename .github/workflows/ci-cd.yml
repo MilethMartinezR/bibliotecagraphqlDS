@@ -1,0 +1,38 @@
+name: CI/CD GraphQL Biblioteca
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Clonar repositorio
+        uses: actions/checkout@v3
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 22
+
+      - name: Instalar dependencias
+        run: npm install
+
+      - name: Test (opcional)
+        run: echo "No hay tests, pero aquí podrías agregar comandos de prueba"
+
+      - name: Desplegar en servidor remoto
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}   # IP o dominio del profesor
+          username: ${{ secrets.SERVER_USER }}  # Usuario con llaves
+          key: ${{ secrets.SERVER_SSH_KEY }}    # Llave privada (GitHub secret)
+          script: |
+            cd ~/biblioteca-graphql
+            git pull origin main
+            npm install
+            pm2 stop biblioteca || true
+            pm2 start server.js --name biblioteca --watch -- 3033
