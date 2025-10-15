@@ -2,6 +2,7 @@ const express = require("express");
 const { graphqlHTTP } = require("express-graphql");
 const { buildSchema } = require("graphql");
 
+// Schema
 const schema = buildSchema(`
   type Libro {
     id: ID!
@@ -23,48 +24,40 @@ const schema = buildSchema(`
   }
 `);
 
+// Datos iniciales
 let libros = [
   { id: "1", titulo: "El Jardín de los Secretos", autor: "Laura Torres", ciudadPublicacion: "Tunja", disponible: true },
   { id: "2", titulo: "Sombras del Ayer", autor: "Carlos Méndez", ciudadPublicacion: "Bogotá", disponible: false },
   { id: "3", titulo: "Historias del Puente Viejo", autor: "Mariana López", ciudadPublicacion: "Medellín", disponible: true },
 ];
 
+// Resolvers
 const root = {
   obtenerLibros: () => libros,
-  buscarLibroPorCiudad: ({ ciudad }) =>
-    libros.filter((l) => l.ciudadPublicacion.toLowerCase() === ciudad.toLowerCase()),
-  libroPorId: ({ id }) => libros.find((l) => l.id === id),
+  buscarLibroPorCiudad: ({ ciudad }) => libros.filter(libro => libro.ciudadPublicacion === ciudad),
+  libroPorId: ({ id }) => libros.find(libro => libro.id === id),
   agregarLibro: ({ titulo, autor, ciudadPublicacion }) => {
-    const nuevoLibro = {
-      id: String(libros.length + 1),
-      titulo,
-      autor,
-      ciudadPublicacion,
-      disponible: true,
-    };
+    const nuevoLibro = { id: String(libros.length + 1), titulo, autor, ciudadPublicacion, disponible: true };
     libros.push(nuevoLibro);
     return nuevoLibro;
   },
   actualizarDisponibilidad: ({ id, disponible }) => {
-    const libro = libros.find((l) => l.id === id);
-    if (!libro) throw new Error("Libro no encontrado");
-    libro.disponible = disponible;
+    const libro = libros.find(l => l.id === id);
+    if (libro) libro.disponible = disponible;
     return libro;
   },
 };
 
+// Servidor
 const app = express();
+app.use("/graphql", graphqlHTTP({
+  schema: schema,
+  rootValue: root,
+  graphiql: true,  // <--- Habilita GraphiQL
+}));
 
-app.use(
-  "/biblioteca",
-  graphqlHTTP({
-    schema,
-    rootValue: root,
-    graphiql: true,
-  })
-);
-
-const PORT = process.env.PORT || 3033;
-app.listen(PORT, "0.0.0.0" ,() => {
-  console.log(`Servidor GraphQL Biblioteca en http://0.0.0.0:${PORT}/biblioteca`);
+const PORT = 3033;
+app.listen(PORT, () => {
+  console.log(`Servidor GraphQL corriendo en http://localhost:${PORT}/graphql`);
 });
+
